@@ -107,3 +107,47 @@ def flatten_sensor(crop):
             sensor.append(crop[key][sub_key])
 
     return sensor
+
+
+def extract_all_tracks(cfg):
+    """Extract tracks from tracks.json, save as a new dataset.
+
+    """
+    Path(cfg.track_dir).mkdir(parents=True, exist_ok=True)
+
+    scene_dirs = list(Path(cfg.save_dir).glob('scene*'))
+    scene_dirs.sort()
+
+    for scene_dir in scene_dirs:
+        scene_name = scene_dir.name
+        track_scene_dir = cfg.track_dir + '\\' + scene_name
+        Path(track_scene_dir).mkdir(parents=True, exist_ok=True)
+
+        tracks_path = str(scene_dir / cfg.track_name)
+        with open(tracks_path, 'r') as read:
+            track_data = json.load(read)
+
+        for i, track in enumerate(track_data):
+            track_dir = track_scene_dir + '\\track-' + str(i + 1).zfill(3)
+            bbox_dir = track_dir + '\\bbox'
+
+            Path(track_dir).mkdir(parents=True, exist_ok=True)
+            Path(bbox_dir).mkdir(parents=True, exist_ok=True)
+
+            summary = []
+            for crop in track:
+                log = dict()
+                log['data'] = crop['data']
+                log['time'] = crop['timestamp']
+                log['id'] = str(crop['vehicle_id']) + '-' + Path(crop['rgb_path']).stem
+                if crop['rgb_path'] != '':
+                    print(crop['rgb_path'])
+                    img = cv2.imread(crop['rgb_path'])
+                    (h1, w1), (h2, w2) = crop['bbox']
+                    img = img[h1:h2, w1:w2, :]
+                    bbox_name = bbox_dir + '\\' + log['id'] + '.png'
+                    cv2.imwrite(bbox_name, img)
+                    summary.append(log)
+
+            with open(track_dir + '\\' + cfg.track_info, 'w') as write:
+                json.dump(summary, write, indent=4)

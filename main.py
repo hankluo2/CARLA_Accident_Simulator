@@ -25,6 +25,9 @@ def main(cfg):
     if cfg.save_track:
         save_track_dataset(cfg)
 
+    if cfg.save_track_dataset:
+        extract_all_tracks(cfg)
+
 
 if __name__ == '__main__':
     main()

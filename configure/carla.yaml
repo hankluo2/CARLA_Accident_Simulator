@@ -27,11 +27,16 @@ height: 480
 save_dir: D:\DATASET\ExperimentData\New\train
 tube_name: tubes.json
 track_name: tracks.json
-os: linux
+os: windows
 linux_save_dir: /root/DATASET/ExperimentData/New/train
+track_info: track_info.json
+
+track_dir: D:\DATASET\ExperimentData\New\track_train
 
 # optional preprocessings
 save_tube: False
-save_track: True
-tube_size: 50
+save_track: True 
+save_track_dataset: False
+
+tube_size: 100
 tube_length: 4 # seconds

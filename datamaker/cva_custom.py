@@ -12,7 +12,7 @@ def save_custom_output(
         path='',
         save_patched=False,
         add_data=None,
-        out_format='pickle'):
+        out_format='json'):
     """Redesign output saver.
 
     """
@@ -82,12 +82,6 @@ def save_custom_output(
             os.makedirs(os.path.dirname(filename))
         with open(filename, 'w') as outfile:
             json.dump(frame_info, outfile, indent=4)
-    else:
-        filename = path + 'out_bbox/%06d.pkl' % carla_img.frame
-        if not os.path.exists(os.path.dirname(filename)):
-            os.makedirs(os.path.dirname(filename))
-        with open(filename, 'w') as outfile:
-            json.dump(out_dict, outfile, indent=4)
 
     if save_patched:
         carla_img.convert(cc_rgb)
