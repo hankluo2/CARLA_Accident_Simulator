@@ -11,6 +11,7 @@ import numpy as np
 from pathlib import Path
 import json
 from tqdm import tqdm
+import pandas as pd
 
 
 def resize_bbox(cfg, crop):
@@ -151,3 +152,40 @@ def extract_all_tracks(cfg):
 
             with open(track_dir + '\\' + cfg.track_info, 'w') as write:
                 json.dump(summary, write, indent=4)
+
+
+def merge_track_to_csv(cfg):
+    all_scene_dir = list(Path(cfg.save_dir).glob('scene-*'))
+    all_tracks_paths = [str(_dir / cfg.track_name) for _dir in all_scene_dir]
+    # print(all_tracks_paths[0])
+
+    track_id = 0
+    full_data = []
+    attrbs = ['x', 'y', 'z', 'vx', 'vy', 'vz', 'rx', 'ry', 'rz', 'ax', 'ay', 'az']
+
+    for tracks_path in all_tracks_paths:
+        with open(tracks_path, 'r') as read:
+            tracks = json.load(read)
+
+        for track_data in tracks:
+            track_id += 1
+
+            for point in track_data:
+                # point['data'] = [item * 100 if i >= 3 else item for i, item in enumerate(point['data'])]
+                rec = dict(zip(attrbs, point['data']))
+                rec['h1'] = point['bbox'][0][0]
+                rec['w1'] = point['bbox'][0][1]
+                rec['h2'] = point['bbox'][1][0]
+                rec['w2'] = point['bbox'][1][1]
+
+                rec['timestamp'] = point['timestamp']
+                rec['rgb_path'] = point['rgb_path']
+                rec['track_id'] = track_id
+
+                full_data.append(rec)
+
+    df = pd.DataFrame(full_data)
+    # print(df.describe())
+    # print(df.head(100))
+    csv_path = cfg.save_dir + '\\' + cfg.all_track_csv
+    df.to_csv(csv_path, header=None)

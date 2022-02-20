@@ -1,10 +1,14 @@
+hydra:
+  run:
+    dir: configure/latestOutput
+
 # main func setup
-scene_num: 0
+scene_num: 1
 
 # carla setup
 host: 127.0.0.1
 port: 2000
-number_of_vehicles: 50
+number_of_vehicles: 80
 safe: 0  # no boolean type in yaml language, 0 for True, 1 for False
 filterv: vehicle.*
 generationv: All
@@ -15,28 +19,31 @@ asynch: 0
 hybrid: 0
 car_lights_on: 1
 hero: 1
+hero_pct: 0.5
 respawn: 1
 no_rendering: 1
 tick_gap: 0.04
-simul_min: 1
+simul_min: 10
 fps: 25
 width: 640
 height: 480
 
 # path
-save_dir: D:\DATASET\ExperimentData\New\train
+save_dir: D:\datasets\Carla\test
 tube_name: tubes.json
 track_name: tracks.json
 os: windows
 linux_save_dir: /root/DATASET/ExperimentData/New/train
 track_info: track_info.json
+all_track_csv: all_tracks.csv
 
-track_dir: D:\DATASET\ExperimentData\New\track_train
+track_dir: D:\datasets\Carla\test\track_train
 
 # optional preprocessings
 save_tube: False
-save_track: True 
+save_track: False 
 save_track_dataset: False
+save_track_to_csv: False
 
 tube_size: 100
 tube_length: 4 # seconds

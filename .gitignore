@@ -152,3 +152,7 @@ cython_debug/
 #.idea/
 
 outputs/*
+TrafficProjOutputs
+util/_collisions
+
+.vscode
