@@ -101,7 +101,7 @@ def save_custom_output(
             v2 = int(crop[1, 1])
             crop_bbox = [(u1, v1), (u2, v2)]
             img_draw.rectangle(crop_bbox, outline="red")
-        filename = path + 'out_rgb_bbox/%06d.png' % carla_img.frame
+        filename = path + 'out_rgb_bbox/%06d.jpg' % carla_img.frame
         if not os.path.exists(os.path.dirname(filename)):
             os.makedirs(os.path.dirname(filename))
         image.save(filename)

@@ -154,5 +154,6 @@ cython_debug/
 outputs/*
 TrafficProjOutputs
 util/_collisions
+configure/latestOutput/*
 
 .vscode

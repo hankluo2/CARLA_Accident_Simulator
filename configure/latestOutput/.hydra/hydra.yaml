@@ -129,7 +129,7 @@ hydra:
     - path: hydra.conf
       schema: pkg
       provider: hydra
-    - path: e:\Dev\CARLA_0.9.12\WindowsNoEditor\AnomalyDetProj\configure
+    - path: E:\Dev\CARLA_0.9.12\WindowsNoEditor\AnomalyDetProj\configure
       schema: file
       provider: main
     - path: ''

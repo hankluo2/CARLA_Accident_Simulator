@@ -1,4 +1,4 @@
-scene_num: 1
+scene_num: 20
 host: 127.0.0.1
 port: 2000
 number_of_vehicles: 80
@@ -12,15 +12,22 @@ asynch: 0
 hybrid: 0
 car_lights_on: 1
 hero: 1
-hero_pct: 0.5
+hero_pct: 0.4
 respawn: 1
 no_rendering: 1
 tick_gap: 0.04
-simul_min: 10
+simul_min: 1
 fps: 25
 width: 640
 height: 480
-save_dir: D:\datasets\Carla\test
+fov: 75
+location:
+  x: -55.1
+  'y': 58.9
+  z: 6
+  pitch: -15
+  yaw: 50
+save_dir: D:\datasets\Carla\UrbanTrafficSimulation\scene05\anomaly
 tube_name: tubes.json
 track_name: tracks.json
 os: windows

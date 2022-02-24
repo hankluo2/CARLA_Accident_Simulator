@@ -3,6 +3,7 @@ from pathlib import Path
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
+import hydra
 
 from cv_video_tools import *
 
@@ -38,6 +39,10 @@ def box_plot(cfg):
     # plt.show()
     # data.boxplot()
     # plt.show()
+
+
+# @hydra.main(config_path='./configure', config_name='video_settings')
+# def convert2video()
 
 
 if __name__ == '__main__':

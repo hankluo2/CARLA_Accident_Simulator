@@ -1,4 +1,5 @@
 import carla
+import gc
 from carla import VehicleLightState as vls
 from agents import BasicAgent
 
@@ -10,6 +11,7 @@ import logging
 import random
 import time
 import queue
+import numpy as np
 from pathlib import Path
 
 
@@ -116,11 +118,9 @@ def launch(cfg):
         print('Created %d npc vehicles.' % len(vehicles_list))
 
         # ============================== set hero vehicle here!!! =====================
-        # TODO: add a hero vehicle: Coding here
-        danger_vid = random.choice(vehicles_list)
-        # danger_vid = random.sample(vehicles_list,
-        #                            int(len(vehicles_list) * cfg.hero_pct))
-        for v in [danger_vid]:  # TODO: bracket [] for only one hero instance(patch)
+        danger_vid = random.sample(vehicles_list,
+                                   int(len(vehicles_list) * cfg.hero_pct))
+        for v in danger_vid:
             danger_vehicle = world.get_actor(v)
             traffic_manager.auto_lane_change(danger_vehicle, False)
             traffic_manager.ignore_lights_percentage(danger_vehicle, 100)
@@ -133,8 +133,6 @@ def launch(cfg):
             traffic_manager.set_percentage_keep_right_rule(danger_vehicle, 100)
 
         # ============================= hero vehicle set ==============================
-        hero = world.get_actor(danger_vid)  # for single hero car
-        # =============================================================================
 
         # --------------
         # Spawn sensors
@@ -150,11 +148,14 @@ def launch(cfg):
         # Spawn RGB camera
         cam_bp = world.get_blueprint_library().find('sensor.camera.rgb')
         cam_bp.set_attribute('sensor_tick', str(cfg.tick_gap))
-        cam_bp.set_attribute('image_size_x', '640')
-        cam_bp.set_attribute('image_size_y', '480')
-        cam_bp.set_attribute('fov', '75')
-        cam_transform = carla.Transform(carla.Location(x=-35, y=7, z=6),
-                                        carla.Rotation(pitch=-15, yaw=130))
+        cam_bp.set_attribute('image_size_x', str(cfg.width))
+        cam_bp.set_attribute('image_size_y', str(cfg.height))
+        cam_bp.set_attribute('fov', str(cfg.fov))
+        cam_transform = carla.Transform(
+            carla.Location(x=cfg.location.x,
+                           y=cfg.location.y,
+                           z=cfg.location.z),
+            carla.Rotation(pitch=cfg.location.pitch, yaw=cfg.location.yaw))
         cam = world.spawn_actor(cam_bp, cam_transform)
 
         nonvehicles_list.append(cam)
@@ -170,16 +171,6 @@ def launch(cfg):
         depth_bp.set_attribute('sensor_tick', str(cfg.tick_gap))
         depth = world.spawn_actor(depth_bp, cam_transform)
 
-        # Spawn collision sensor
-        collision_bp = world.get_blueprint_library().find(
-            'sensor.other.collision')
-        collision_transform = carla.Transform()
-        collision = world.spawn_actor(collision_bp, collision_transform, attach_to=hero)
-        collision_queue = queue.Queue()
-        collision.listen(collision_queue.put)
-        nonvehicles_list.append(collision)
-        print('Collision sensor ready!')
-
         # cc_depth_log = carla.ColorConverter.LogarithmicDepth
         nonvehicles_list.append(depth)
         depth_queue = queue.Queue()
@@ -194,7 +185,7 @@ def launch(cfg):
         # while True:
         fps = 1 / cfg.tick_gap
 
-        # hero_agents = {}
+        hero_in_roi = {}
         # stop_agents = {}
         for _ in range(int(60 * cfg.simul_min * fps)):
             # Extract the available data
@@ -233,60 +224,36 @@ def launch(cfg):
                 filtered_vehicles_ids = [fv.id for fv in filtered_vehicles]
 
                 # Judge whether danger vehicle in ROI:
-                # danger_roi_ids = inter(filtered_vehicles_ids, danger_vid)
+                danger_roi_ids = inter(filtered_vehicles_ids, danger_vid)
 
-                # Judge whether hero car is in ROI:
-                # whether collision happens
+                if danger_roi_ids:
+                    # print(f"Detected danger vehicles: {danger_roi_ids}, heroes: {hero_in_roi}")
 
-                if not collision_queue.empty():
-                    print(hero.get_location())
-                    if danger_vid in filtered_vehicles:
-                        print(f"report collision: {danger_vid}")
-                        agt = BasicAgent(hero, target_speed=0)
-                        hero.apply_control(agt.run_step())
-                        
-                    else:
-                        collision_queue.queue.clear()
-
-                # if danger_roi_ids:
-                    # print(f"Detected danger vehicles: {danger_roi_ids}")
-                    # TODO: to debug: agents
                     # ==========================================================
-                    # for hero_id in danger_roi_ids:
+                    for hero_id in danger_roi_ids:
                         # get each danger car id in roi: hero_id
+                        hero = world.get_actor(hero_id)
+                        if hero_id not in hero_in_roi:
+                            hero_in_roi[hero_id] = {}
+                            hero_in_roi[hero_id]['iter'] = 0
+                        else:
+                            hero_in_roi[hero_id]['iter'] += 1
 
-                        # agt = BasicAgent(hero, target_speed=0)
-                        # hero_agents[hero_id] = agt
-                        # hero = world.get_actor(hero_id)
+                        hero_agent = CustomAgent(
+                            hero, it=hero_in_roi[hero_id]['iter'])
+                        hero_in_roi[hero_id]['agent'] = hero_agent
 
-                        # attach collision sensor
-                        # ==========================================
-                        # collision_transform = carla.Transform()
-                        # collision = world.spawn_actor(collision_bp, collision_transform, attach_to=hero)
-                        # collision_queue = queue.Queue()
-                        # collision.listen(collision_queue.put)
-                        # ==========================================
+                    # print(hero_in_roi)  # show debug
 
-                        # unsure whether to tick here
-                        # now_frame = world.tick()
+                    for hero_id in hero_in_roi:
+                        agent = hero_in_roi[hero_id]['agent']
+                        hero.apply_control(agent.run_step())
 
-                        # if (not collision_queue.empty()) and hero_id not in stop_agents:
-                        #     agt = BasicAgent(hero, target_speed=0)  # await for collision sensor signal
-                        #     stop_agents[hero_id] = agt
-                        #     print("report collision:", collision_queue.get())
+                        del agent
 
-                        # for hero_id in stop_agents:
-                        #     stop_agents[hero_id].set_target_speed(0)
-
-                        # destroy temporary collision sensor
-                        # collision.destroy()
-                        # collision_queue.queue.clear()
-
-                    # print(stop_agents)
-                    # for hero_id in stop_agents:
-                    #     stop_agents[hero_id].set_target_speed(0)
-                    #     hero = world.get_actor(hero_id)
-                    #     hero.apply_control(stop_agents[hero_id].run_step())
+                        # print(hero_in_roi[hero_id])
+                        # print(hero.get_velocity())
+                        # print()
                     # ==========================================================
 
                 # for v in filtered_vehicles:
@@ -307,15 +274,6 @@ def launch(cfg):
 
                 # print(len(filtered_vehicles), len(removed_vehicles))
 
-                # The params of following function are attached to filtered and removed vehicles.
-                # cva.save_output(rgb_img,
-                #                 filtered['bbox'],
-                #                 filtered['class'],
-                #                 removed['bbox'],
-                #                 removed['class'],
-                #                 save_patched=True,
-                #                 out_format='json')
-
                 cva_custom.save_custom_output(
                     world,
                     rgb_img,
@@ -328,6 +286,7 @@ def launch(cfg):
                 time_sim
 
             time_sim += settings.fixed_delta_seconds
+            gc.collect()
 
     except:
         print("\nFailed to enter the main function. Exit.\n")
@@ -358,8 +317,10 @@ def launch(cfg):
 
 def make_data(cfg):
     try:
-        for _ in range(cfg.scene_num):
+        for i in range(cfg.scene_num):
             since = time.time()
+            # if i >= int(cfg.scene_num * 0.8):
+            # cfg.hero_pct = 0.4
             try:
                 launch(cfg)
             except KeyboardInterrupt:
@@ -371,6 +332,37 @@ def make_data(cfg):
     except:
         print("Program terminated. Exit.")
 
+    # print(f"Video dataset splitted at {int(cfg.scene_num * 0.8)}.")
+
 
 def inter(a, b):
     return list(set(a) & set(b))
+
+
+class CustomAgent(BasicAgent):
+
+    def __init__(self, vehicle, target_speed=72, it=0, debug=False):
+        """
+        :param target_speed: speed (in Km/h) at which the vehicle will move
+        """
+        super().__init__(vehicle, target_speed=target_speed, opt_dict={})
+        self.it = it
+
+    def run_step(self, debug=False):
+        """
+        Execute one step of navigation.
+        :return: carla.VehicleControl
+        """
+        # Actions to take during each simulation step
+        control = carla.VehicleControl()
+
+        # custom vehicle control at intersections
+        control.steer = 0.0
+
+        control.throttle = 1.0 - self.it * 0.04 if self.it < 25 else 0.0
+        control.brake = self.it * 0.04 if self.it < 25 else 1.0
+
+        control.hand_brake = False
+        control.manual_gear_shift = False
+
+        return control
