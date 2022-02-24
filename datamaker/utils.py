@@ -19,7 +19,7 @@ def exp_dir(prfx='scene', save_dir=None) -> str:
         next_exp_num = int(dir_list[-1].split('-')[-1]) + 1
         new_dir = dir_list[-1].split('-')[-2] + '-' + str(next_exp_num)
     else:
-        new_dir = save_dir + f'\\{prfx}-1'
+        new_dir = save_dir + f'/{prfx}-1'
 
     Path(new_dir).mkdir(parents=True, exist_ok=True)
     return new_dir

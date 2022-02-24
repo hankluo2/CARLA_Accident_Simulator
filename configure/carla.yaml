@@ -1,9 +1,9 @@
 hydra:
   run:
-    dir: configure/latestOutput
+    dir: products
 
 # main func setup
-scene_num: 20
+scene_num: 40
 
 # carla setup
 host: 127.0.0.1
@@ -36,7 +36,8 @@ location:
   yaw: 50
 
 # path
-save_dir: D:\datasets\Carla\UrbanTrafficSimulation\scene05\anomaly
+# save_dir: /home/haohan/LocalDatasets/CATS/scene05/anomaly
+save_dir: CATS/scene05/anomaly
 tube_name: tubes.json
 track_name: tracks.json
 os: windows

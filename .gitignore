@@ -157,3 +157,4 @@ util/_collisions
 configure/latestOutput/*
 
 .vscode
+products/

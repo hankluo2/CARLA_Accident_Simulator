@@ -6,7 +6,7 @@ from agents import BasicAgent
 import datamaker.carla_vehicle_annotator as cva
 import datamaker.cva_custom as cva_custom
 from datamaker.utils import exp_dir, retrieve_data
-import hydra
+
 import logging
 import random
 import time
@@ -15,11 +15,39 @@ import numpy as np
 from pathlib import Path
 
 
+class CustomAgent(BasicAgent):
+    def __init__(self, vehicle, target_speed=72, it=0, debug=False):
+        """
+        :param target_speed: speed (in Km/h) at which the vehicle will move
+        """
+        super().__init__(vehicle, target_speed=target_speed, opt_dict={})
+        self.it = it
+
+    def run_step(self, debug=False):
+        """
+        Execute one step of navigation.
+        :return: carla.VehicleControl
+        """
+        # Actions to take during each simulation step
+        control = carla.VehicleControl()
+
+        # custom vehicle control at intersections
+        control.steer = 0.0
+
+        control.throttle = 1.0 - self.it * 0.04 if self.it < 25 else 0.0
+        control.brake = self.it * 0.04 if self.it < 25 else 1.0
+
+        control.hand_brake = False
+        control.manual_gear_shift = False
+
+        return control
+
+
 def launch(cfg):
     logging.basicConfig(format='%(levelname)s: %(message)s',
                         level=logging.INFO)
 
-    cur_dir = exp_dir(save_dir=cfg.save_dir) + '\\'
+    cur_dir = exp_dir(save_dir=cfg.save_dir) + '/'
     print(cur_dir)
 
     vehicles_list = []
@@ -134,9 +162,7 @@ def launch(cfg):
 
         # ============================= hero vehicle set ==============================
 
-        # --------------
         # Spawn sensors
-        # --------------
         q_list = []
         idx = 0
         tick_queue = queue.Queue()
@@ -182,11 +208,9 @@ def launch(cfg):
 
         # Begin the loop
         time_sim = 0
-        # while True:
         fps = 1 / cfg.tick_gap
 
         hero_in_roi = {}
-        # stop_agents = {}
         for _ in range(int(60 * cfg.simul_min * fps)):
             # Extract the available data
             now_frame = world.tick()
@@ -197,7 +221,7 @@ def launch(cfg):
 
                 # Skip if any sensor data is not available
                 if None in data:
-                    print("No sensor data available. Continue.")
+                    # print("No sensor data available. Continue.")
                     continue
 
                 vehicles_raw = world.get_actors().filter('vehicle.*')
@@ -207,19 +231,12 @@ def launch(cfg):
 
                 # Attach additional information to the snapshot
                 vehicles = cva.snap_processing(vehicles_raw, snap)
-                # print('\nGet vehicles per tick:')
-                # print(len(vehicles))
-                # print(vehicles.id)
-                # for v in vehicles:
-                #     print(v.id)
 
                 # Save depth image, RGB image, and Bounding Boxes data
                 depth_meter = cva.extract_depth(depth_img)
                 filtered, removed = cva.auto_annotate(vehicles, cam,
                                                       depth_meter)
-                # json_path=r'C:\Users\root\Develop\CARLA_0.9.12\WindowsNoEditor\AnomalyDetProj\vehicle_class_json_file.txt')
 
-                # print(filtered, removed)
                 filtered_vehicles = filtered['vehicles']
                 filtered_vehicles_ids = [fv.id for fv in filtered_vehicles]
 
@@ -227,9 +244,6 @@ def launch(cfg):
                 danger_roi_ids = inter(filtered_vehicles_ids, danger_vid)
 
                 if danger_roi_ids:
-                    # print(f"Detected danger vehicles: {danger_roi_ids}, heroes: {hero_in_roi}")
-
-                    # ==========================================================
                     for hero_id in danger_roi_ids:
                         # get each danger car id in roi: hero_id
                         hero = world.get_actor(hero_id)
@@ -243,19 +257,13 @@ def launch(cfg):
                             hero, it=hero_in_roi[hero_id]['iter'])
                         hero_in_roi[hero_id]['agent'] = hero_agent
 
-                    # print(hero_in_roi)  # show debug
-
                     for hero_id in hero_in_roi:
                         agent = hero_in_roi[hero_id]['agent']
                         hero.apply_control(agent.run_step())
 
                         del agent
 
-                        # print(hero_in_roi[hero_id])
-                        # print(hero.get_velocity())
-                        # print()
-                    # ==========================================================
-
+                # Examples for vehicle status info reporting:
                 # for v in filtered_vehicles:
                 #     v = world.get_actor(v.id)
                 #     print(v.get_location())
@@ -263,34 +271,19 @@ def launch(cfg):
                 #     print(v.get_angular_velocity().y)
                 #     print(v.get_acceleration().y)
 
-                # removed_vehicles = removed['vehicles']
-
-                # for v in removed_vehicles:
-                #     v = world.get_actor(v.id)
-                #     print(v.get_location())
-                #     print(v.get_velocity().y)
-                #     print(v.get_angular_velocity().y)
-                #     print(v.get_acceleration().y)
-
-                # print(len(filtered_vehicles), len(removed_vehicles))
-
-                cva_custom.save_custom_output(
-                    world,
-                    rgb_img,
-                    filtered_vehicles,
-                    filtered['bbox'],
-                    # save_patched=True,
-                    save_patched=False,
-                    path=cur_dir,
-                    out_format='json')
+                cva_custom.save_custom_output(world,
+                                              rgb_img,
+                                              filtered_vehicles,
+                                              filtered['bbox'],
+                                              save_patched=False,
+                                              path=cur_dir,
+                                              out_format='json')
                 time_sim
 
             time_sim += settings.fixed_delta_seconds
-            gc.collect()
 
     except:
         print("\nFailed to enter the main function. Exit.\n")
-    # finally:
     try:
         cam.stop()
         depth.stop()
@@ -309,9 +302,7 @@ def launch(cfg):
     print('\ndestroying %d vehicles' % len(vehicles_list))
     client.apply_batch([carla.command.DestroyActor(x) for x in vehicles_list])
 
-    # destroy collision sensor
-    # collision.destroy()
-
+    gc.collect()
     time.sleep(0.5)
 
 
@@ -319,8 +310,7 @@ def make_data(cfg):
     try:
         for i in range(cfg.scene_num):
             since = time.time()
-            # if i >= int(cfg.scene_num * 0.8):
-            # cfg.hero_pct = 0.4
+
             try:
                 launch(cfg)
             except KeyboardInterrupt:
@@ -332,37 +322,6 @@ def make_data(cfg):
     except:
         print("Program terminated. Exit.")
 
-    # print(f"Video dataset splitted at {int(cfg.scene_num * 0.8)}.")
-
 
 def inter(a, b):
     return list(set(a) & set(b))
-
-
-class CustomAgent(BasicAgent):
-
-    def __init__(self, vehicle, target_speed=72, it=0, debug=False):
-        """
-        :param target_speed: speed (in Km/h) at which the vehicle will move
-        """
-        super().__init__(vehicle, target_speed=target_speed, opt_dict={})
-        self.it = it
-
-    def run_step(self, debug=False):
-        """
-        Execute one step of navigation.
-        :return: carla.VehicleControl
-        """
-        # Actions to take during each simulation step
-        control = carla.VehicleControl()
-
-        # custom vehicle control at intersections
-        control.steer = 0.0
-
-        control.throttle = 1.0 - self.it * 0.04 if self.it < 25 else 0.0
-        control.brake = self.it * 0.04 if self.it < 25 else 1.0
-
-        control.hand_brake = False
-        control.manual_gear_shift = False
-
-        return control
