@@ -1,0 +1,8 @@
+carla==0.9.12
+hydra-core
+networkx
+opencv-python
+pillow
+pandas
+yapf
+seaborn
