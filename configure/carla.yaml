@@ -3,7 +3,7 @@ hydra:
     dir: products
 
 # main func setup
-scene_num: 40
+scene_num: 0
 
 # carla setup
 host: 127.0.0.1
@@ -19,39 +19,29 @@ asynch: 0
 hybrid: 0
 car_lights_on: 1
 hero: 1
-hero_pct: 0.4
+hero_pct: 0.2
 respawn: 1
 no_rendering: 1
 tick_gap: 0.04
 simul_min: 1
-fps: 25
+fps: 25  # video param
 width: 640
 height: 480
 fov: 75
 location:
-  x: -55.1
-  y: 58.9
+  x: -16.9
+  y: -70.8
   z: 6
   pitch: -15
-  yaw: 50
+  yaw: 40
 
 # path
-# save_dir: /home/haohan/LocalDatasets/CATS/scene05/anomaly
-save_dir: CATS/scene05/anomaly
-tube_name: tubes.json
-track_name: tracks.json
-os: windows
-linux_save_dir: /root/DATASET/ExperimentData/New/train
-track_info: track_info.json
-all_track_csv: all_tracks.csv
+save_dir: CATS/scene02/anomaly
 
-track_dir: D:\datasets\Carla\test\track_train
-
-# optional preprocessings
-save_tube: False
-save_track: False 
-save_track_dataset: False
-save_track_to_csv: False
-
-tube_size: 100
-tube_length: 4 # seconds
+# video processing parameters
+save_mp4: True
+frame_input_dir: CATS/scene02/
+video_output_dir: CATS_video/scene02/
+format: png
+video_format: mp4
+frame_shift: 90  # fixed

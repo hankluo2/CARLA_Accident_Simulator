@@ -17,9 +17,9 @@ def exp_dir(prfx='scene', save_dir=None) -> str:
     if dir_list != []:
         dir_list.sort(key=lambda s: int(s.split('-')[-1]))
         next_exp_num = int(dir_list[-1].split('-')[-1]) + 1
-        new_dir = dir_list[-1].split('-')[-2] + '-' + str(next_exp_num)
+        new_dir = dir_list[-1].split('-')[-2] + '-' + str(next_exp_num).zfill(2)
     else:
-        new_dir = save_dir + f'/{prfx}-1'
+        new_dir = save_dir + f'/{prfx}-01'
 
     Path(new_dir).mkdir(parents=True, exist_ok=True)
     return new_dir

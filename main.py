@@ -1,14 +1,10 @@
 """
-Environment: Windows
+Environment: Ubuntu/Windows
 """
 import hydra
-from pathlib import Path
-import json
+import img2vid
 
 from datamaker import *
-from preprocess import *
-from visualize import box_plot
-from cv_video_tools import *
 
 
 @hydra.main(config_path='./configure', config_name='carla')
@@ -20,20 +16,11 @@ def main(cfg):
     else:
         print("Data maker unset. Check config file.")
 
-    # organize data
-    if cfg.save_tube:
-        get_all_merged_tubes_from_scenes(cfg)
+    if cfg.save_mp4:
+        if not Path(cfg.video_output_dir).exists():
+            Path(cfg.video_output_dir).mkdir(parents=True, exist_ok=True)
 
-    if cfg.save_track:
-        save_track_dataset(cfg)
-
-    if cfg.save_track_to_csv:
-        merge_track_to_csv(cfg)
-
-    if cfg.save_track_dataset:
-        extract_all_tracks(cfg)
-
-    # box_plot(cfg)
+        img2vid.dfs_copier(cfg.frame_input_dir, cfg.video_output_dir, cfg)
 
 
 if __name__ == '__main__':
