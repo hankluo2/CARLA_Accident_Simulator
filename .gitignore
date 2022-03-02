@@ -158,3 +158,6 @@ configure/latestOutput/*
 
 .vscode
 products/
+
+# hydra
+multirun

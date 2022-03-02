@@ -6,6 +6,7 @@ from agents import BasicAgent
 import datamaker.carla_vehicle_annotator as cva
 import datamaker.cva_custom as cva_custom
 from datamaker.utils import exp_dir, retrieve_data
+from datamaker.weather import Weather
 
 import logging
 import random
@@ -16,6 +17,7 @@ from pathlib import Path
 
 
 class CustomAgent(BasicAgent):
+
     def __init__(self, vehicle, target_speed=72, it=0, debug=False):
         """
         :param target_speed: speed (in Km/h) at which the vehicle will move
@@ -43,6 +45,8 @@ class CustomAgent(BasicAgent):
         return control
 
 
+
+
 def launch(cfg):
     logging.basicConfig(format='%(levelname)s: %(message)s',
                         level=logging.INFO)
@@ -62,6 +66,10 @@ def launch(cfg):
         traffic_manager = client.get_trafficmanager(cfg.tm_port)
         traffic_manager.set_global_distance_to_leading_vehicle(2.5)
         world = client.get_world()
+
+        # set weather
+        weather = Weather(world.get_weather(), cfg)
+        world.set_weather(weather.weather)
 
         print('RUNNING in synchronous mode:')
         settings = world.get_settings()
