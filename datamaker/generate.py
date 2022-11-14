@@ -1,4 +1,5 @@
 import carla
+import os
 import gc
 from carla import VehicleLightState as vls
 from agents import BasicAgent
@@ -6,7 +7,7 @@ from agents import BasicAgent
 import datamaker.carla_vehicle_annotator as cva
 import datamaker.cva_custom as cva_custom
 from datamaker.utils import exp_dir, retrieve_data
-from datamaker.weather import Weather
+from datamaker.settings import Weather, Location
 
 import logging
 import random
@@ -45,13 +46,17 @@ class CustomAgent(BasicAgent):
         return control
 
 
-
-
 def launch(cfg):
     logging.basicConfig(format='%(levelname)s: %(message)s',
                         level=logging.INFO)
 
-    cur_dir = exp_dir(save_dir=cfg.save_dir) + '/'
+    if cfg.weather_on:
+        save_dir = str(
+            Path(cfg.dataset) / ('scene' + cfg.scene_num + '_' + cfg.weather + '_' + str(cfg.number_of_vehicles)))
+    else:
+        save_dir = str(Path(cfg.dataset) / ('scene' + cfg.scene_num))
+
+    cur_dir = exp_dir(save_dir=save_dir) + '/'
     print(cur_dir)
 
     vehicles_list = []
@@ -68,16 +73,18 @@ def launch(cfg):
         world = client.get_world()
 
         # set weather
-        weather = Weather(world.get_weather(), cfg)
-        world.set_weather(weather.weather)
+        if cfg.weather_on:
+            weather = Weather(world.get_weather(), cfg)
+            world.set_weather(weather.weather)
 
         print('RUNNING in synchronous mode:')
         settings = world.get_settings()
         traffic_manager.set_synchronous_mode(True)
+        tick_gap = 1. / cfg.fps
         if not settings.synchronous_mode:
             synchronous_master = True
             settings.synchronous_mode = True
-            settings.fixed_delta_seconds = cfg.tick_gap
+            settings.fixed_delta_seconds = tick_gap
             world.apply_settings(settings)
         else:
             synchronous_master = False
@@ -181,15 +188,16 @@ def launch(cfg):
 
         # Spawn RGB camera
         cam_bp = world.get_blueprint_library().find('sensor.camera.rgb')
-        cam_bp.set_attribute('sensor_tick', str(cfg.tick_gap))
+        cam_bp.set_attribute('sensor_tick', str(tick_gap))
         cam_bp.set_attribute('image_size_x', str(cfg.width))
         cam_bp.set_attribute('image_size_y', str(cfg.height))
         cam_bp.set_attribute('fov', str(cfg.fov))
+        cam_location = Location(cfg.scene_num)
         cam_transform = carla.Transform(
-            carla.Location(x=cfg.location.x,
-                           y=cfg.location.y,
-                           z=cfg.location.z),
-            carla.Rotation(pitch=cfg.location.pitch, yaw=cfg.location.yaw))
+            carla.Location(x=cam_location.x,
+                           y=cam_location.y,
+                           z=cam_location.z),
+            carla.Rotation(pitch=cam_location.pitch, yaw=cam_location.yaw))
         cam = world.spawn_actor(cam_bp, cam_transform)
 
         nonvehicles_list.append(cam)
@@ -202,7 +210,7 @@ def launch(cfg):
 
         # Spawn depth camera
         depth_bp = world.get_blueprint_library().find('sensor.camera.depth')
-        depth_bp.set_attribute('sensor_tick', str(cfg.tick_gap))
+        depth_bp.set_attribute('sensor_tick', str(tick_gap))
         depth = world.spawn_actor(depth_bp, cam_transform)
 
         # cc_depth_log = carla.ColorConverter.LogarithmicDepth
@@ -216,14 +224,15 @@ def launch(cfg):
 
         # Begin the loop
         time_sim = 0
-        fps = 1 / cfg.tick_gap
+        # fps = 1 / cfg.tick_gap
+        fps = cfg.fps
 
         hero_in_roi = {}
         for _ in range(int(60 * cfg.simul_min * fps)):
             # Extract the available data
             now_frame = world.tick()
 
-            if time_sim >= cfg.tick_gap:
+            if time_sim >= tick_gap:
                 data = [retrieve_data(q, now_frame) for q in q_list]
                 assert all(x.frame == now_frame for x in data if x is not None)
 
@@ -316,13 +325,15 @@ def launch(cfg):
 
 def make_data(cfg):
     try:
-        for i in range(cfg.scene_num):
+        for i in range(cfg.video_num):
             since = time.time()
 
             try:
                 launch(cfg)
             except KeyboardInterrupt:
-                pass
+                os.system(f"docker stop {cfg.dockerid}")
+                print(f"Carla simulator docker#{cfg.dockerid} terminated.")
+                return
             finally:
                 print('\ndone.')
                 print("Simulation cost {:.4f} seconds.\n".format(time.time() -

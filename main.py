@@ -12,18 +12,18 @@ from datamaker import *
 @hydra.main(config_path='./configure', config_name='carla')
 def main(cfg):
     # make data
-    if cfg.scene_num != 0:
+    if cfg.video_num != 0:
         try:
             print("Starting simulator... waiting...")
             os.system(f"docker start {cfg.dockerid}")
             time.sleep(15)
             print("Simulator started successfully!")
         except:
+            # os.system(f"docker stop {cfg.dockerid}")
             return
 
         print("Begin to make raw data ...\n")
         make_data(cfg)
-
         os.system(f"docker stop {cfg.dockerid}")
         print(f"Carla simulator docker#{cfg.dockerid} terminated.")
         time.sleep(10)
@@ -32,10 +32,18 @@ def main(cfg):
         print("Data maker unset. Check config file.")
 
     if cfg.save_mp4:
-        if not Path(cfg.video_output_dir).exists():
-            Path(cfg.video_output_dir).mkdir(parents=True, exist_ok=True)
+        if cfg.weather_on:
+            frame_input_dir = f"{cfg.dataset}/scene{cfg.scene_num}_{cfg.weather}_{cfg.number_of_vehicles}"
+            video_output_dir = f"{cfg.dataset}_video/scene{cfg.scene_num}_{cfg.weather}_{cfg.number_of_vehicles}" 
+        else:
+            frame_input_dir = f"{cfg.dataset}/scene{cfg.scene_num}"
+            video_output_dir = f"{cfg.dataset}_video/scene{cfg.scene_num}"
 
-        fsvg(cfg.frame_input_dir, cfg.video_output_dir, cfg.fps,
+        if not Path(video_output_dir).exists():
+            Path(video_output_dir).mkdir(parents=True, exist_ok=True)
+
+
+        fsvg(frame_input_dir, video_output_dir, cfg.fps,
              cfg.frame_shift, cfg.video_format, cfg.img_format)
 
 

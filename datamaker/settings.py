@@ -199,3 +199,52 @@ class Reflection(object):
         self.wetness = 100.
         self.azimuth = 39.96
         self.altitude = -4.54
+
+
+class Location(object):
+
+    def __init__(self, scene_num: str) -> None:
+        self.x = 0
+        self.y = 0
+        self.z = 0
+        self.yaw = 0
+        self.pitch = 0
+        self.set_location(scene_num)
+
+    def set_location(self, scene_num: str):
+        if scene_num == '01':
+            self.x = -35
+            self.y = 7
+            self.z = 6
+            self.yaw = 130
+            self.pitch = -15
+        if scene_num == '02':
+            self.x = -16.9
+            self.y = -70.8
+            self.z = 6
+            self.yaw = 40
+            self.pitch = -15
+        if scene_num == '03':
+            self.x = 116.9
+            self.y = -4.4
+            self.z = 6
+            self.yaw = 130
+            self.pitch = -15
+        if scene_num == '04':
+            self.x = -115.6
+            self.y = -3.6
+            self.yaw = 62
+            self.z = 6
+            self.pitch = -15
+        if scene_num == '05':
+            self.x = -55.1
+            self.y = 58.9
+            self.yaw = 50
+            self.z = 6
+            self.pitch = -15
+        if scene_num == '06':
+            self.x = -32.7
+            self.y = 35.5
+            self.z = 6
+            self.pitch = -20
+            self.yaw = 225

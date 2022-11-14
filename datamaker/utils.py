@@ -7,7 +7,7 @@ def exp_dir(prfx='scene', save_dir=None) -> str:
 
     Args:
         prfx (str): preffix of the saving derectory.
-        save_dir (str): directory to save experiment data.
+        save_dir (optional, str): directory to save experiment data. Default to None.
 
     Returns:
         str: directory to save output data.
